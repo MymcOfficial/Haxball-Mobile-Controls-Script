@@ -1,0 +1,133 @@
+// ==UserScript==
+// @name         Haxball Smooth WASD Joystick
+// @version      1.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  /* ---------- styles ---------- */
+  const style = document.createElement("style");
+  style.innerHTML = `
+    #joystick {
+      position: fixed;
+      left: 5vw;
+      bottom: 8vw;
+      width: 120px;
+      height: 120px;
+      background: rgba(200,200,200,0.2);
+      border-radius: 50%;
+      z-index: 9999;
+      touch-action: none;
+    }
+    #thumb {
+      position: absolute;
+      width: 45px;
+      height: 45px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #kick {
+      position: fixed;
+      right: 6vw;
+      bottom: 10vw;
+      width: 90px;
+      height: 90px;
+      background: rgba(200,200,200,0.3);
+      border-radius: 50%;
+      z-index: 9999;
+      touch-action: none;
+      font-size: 22px;
+      font-weight: bold;
+    }
+  `;
+  document.head.appendChild(style);
+
+  /* ---------- elements ---------- */
+  const joystick = document.createElement("div");
+  joystick.id = "joystick";
+  joystick.innerHTML = `<div id="thumb"></div>`;
+
+  const kickBtn = document.createElement("div");
+  kickBtn.id = "kick";
+  kickBtn.innerText = "X";
+
+  document.body.appendChild(joystick);
+  document.body.appendChild(kickBtn);
+
+  const thumb = joystick.querySelector("#thumb");
+
+  /* ---------- key emulation ---------- */
+  function sendKey(type, code) {
+    gameFrame.document.dispatchEvent(
+      new KeyboardEvent(type, { code, bubbles: true })
+    );
+  }
+
+  function emulate(dir) {
+    const keys = { w: false, a: false, s: false, d: false };
+    for (const c of dir) keys[c] = true;
+
+    sendKey(keys.w ? "keydown" : "keyup", "KeyW");
+    sendKey(keys.a ? "keydown" : "keyup", "KeyA");
+    sendKey(keys.s ? "keydown" : "keyup", "KeyS");
+    sendKey(keys.d ? "keydown" : "keyup", "KeyD");
+  }
+
+  /* ---------- joystick logic ---------- */
+  let touching = false;
+
+  joystick.addEventListener("touchstart", e => {
+    touching = true;
+    update(e.touches[0]);
+  });
+
+  joystick.addEventListener("touchmove", e => {
+    if (touching) update(e.touches[0]);
+  });
+
+  joystick.addEventListener("touchend", reset);
+  joystick.addEventListener("touchcancel", reset);
+
+  function update(touch) {
+    const r = joystick.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+
+    let dx = touch.clientX - cx;
+    let dy = touch.clientY - cy;
+
+    const dist = Math.min(r.width / 2, Math.hypot(dx, dy));
+    const ang = Math.atan2(dy, dx);
+
+    const x = Math.cos(ang) * dist;
+    const y = Math.sin(ang) * dist;
+
+    thumb.style.left = `${x + r.width / 2 - 22}px`;
+    thumb.style.top  = `${y + r.height / 2 - 22}px`;
+
+    const deg = (ang * 180 / Math.PI + 360) % 360;
+    const dir = ["d","sd","s","sa","a","wa","w","wd"][Math.round(deg / 45) % 8];
+    emulate(dir);
+  }
+
+  function reset() {
+    touching = false;
+    thumb.style.left = "50%";
+    thumb.style.top  = "50%";
+    thumb.style.transform = "translate(-50%, -50%)";
+    emulate("");
+  }
+
+  /* ---------- kick ---------- */
+  kickBtn.addEventListener("touchstart", () => sendKey("keydown", "KeyX"));
+  kickBtn.addEventListener("touchend", () => sendKey("keyup", "KeyX"));
+})();
