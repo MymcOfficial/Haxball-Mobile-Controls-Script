@@ -1,0 +1,61 @@
+// ==UserScript==
+// @name         Haxball WASD Mobile Buttons
+// @version      1.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  function send(type, code) {
+    gameFrame.document.dispatchEvent(
+      new KeyboardEvent(type, { code, bubbles: true })
+    );
+  }
+
+  function makeBtn(label, left, bottom, code) {
+    const b = document.createElement("div");
+    b.textContent = label;
+
+    Object.assign(b.style, {
+      position: "fixed",
+      left,
+      bottom,
+      width: "100px",
+      height: "100px",
+      background: "rgba(200,200,200,0.25)",
+      borderRadius: "18px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "32px",
+      fontWeight: "bold",
+      zIndex: 9999,
+      touchAction: "none",
+      userSelect: "none"
+    });
+
+    b.addEventListener("touchstart", e => {
+      e.preventDefault();
+      send("keydown", code);
+    });
+
+    b.addEventListener("touchend", () => send("keyup", code));
+    b.addEventListener("touchcancel", () => send("keyup", code));
+
+    document.body.appendChild(b);
+  }
+
+  // WASD layout
+  makeBtn("A", "5vw", "14vw", "KeyA");
+  makeBtn("D", "25vw", "14vw", "KeyD");
+  makeBtn("W", "15vw", "24vw", "KeyW");
+  makeBtn("S", "15vw", "4vw",  "KeyS");
+
+  // Kick
+  makeBtn("X", "70vw", "12vw", "KeyX");
+})();
