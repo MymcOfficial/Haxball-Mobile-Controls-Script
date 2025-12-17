@@ -16,8 +16,8 @@
   style.innerHTML = `
     #joystick {
       position: fixed;
-      left: 5vw;
-      bottom: 8vw;
+      left: 3vw;
+      bottom: 6vw;
       width: 120px;
       height: 120px;
       background: rgba(200,200,200,0.2);
