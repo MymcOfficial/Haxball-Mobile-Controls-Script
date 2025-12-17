@@ -1,0 +1,81 @@
+// ==UserScript==
+// @name         Haxball Mobile Controls (Opera Fix)
+// @version      2.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  let input = null;
+
+  function hookInput() {
+    if (window._input) {
+      input = window._input;
+      return true;
+    }
+    return false;
+  }
+
+  const wait = setInterval(() => {
+    if (hookInput()) {
+      clearInterval(wait);
+      initControls();
+    }
+  }, 300);
+
+  function initControls() {
+    function set(key, val) {
+      if (!input) return;
+      input[key] = val;
+    }
+
+    function btn(label, left, bottom, key) {
+      const b = document.createElement("div");
+      b.textContent = label;
+
+      Object.assign(b.style, {
+        position: "fixed",
+        left,
+        bottom,
+        width: "75px",
+        height: "75px",
+        background: "rgba(0,0,0,0.8)",
+        color: "#fff",
+        borderRadius: "14px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "24px",
+        zIndex: "999999",
+        touchAction: "none",
+        userSelect: "none"
+      });
+
+      b.onpointerdown = e => {
+        e.preventDefault();
+        set(key, true);
+      };
+
+      b.onpointerup = e => {
+        e.preventDefault();
+        set(key, false);
+      };
+
+      b.onpointercancel = () => set(key, false);
+      b.onpointerleave = () => set(key, false);
+
+      document.body.appendChild(b);
+    }
+
+    // WASD
+    btn("A", "20px", "90px", "left");
+    btn("D", "180px", "90px", "right");
+    btn("W", "100px", "160px", "up");
+    btn("S", "100px", "20px", "down");
+
+    // Kick
+    btn("X", "calc(100% - 100px)", "90px", "kick");
+  }
+})();
