@@ -18,8 +18,8 @@
       position: fixed;
       left: 3vw;
       bottom: 6vw;
-      width: 120px;
-      height: 120px;
+      width: 150px;
+      height: 150px;
       background: rgba(200,200,200,0.2);
       border-radius: 50%;
       z-index: 9999;
