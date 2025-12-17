@@ -51,10 +51,10 @@
   }
 
   // WASD layout
-  makeBtn("A", "5vw", "14vw", "KeyA");
-  makeBtn("D", "25vw", "14vw", "KeyD");
-  makeBtn("W", "15vw", "24vw", "KeyW");
-  makeBtn("S", "15vw", "4vw",  "KeyS");
+  makeBtn("A", "8vw", "8vw", "KeyA");
+  makeBtn("D", "22vw", "8vw", "KeyD");
+  makeBtn("W", "15vw", "16vw", "KeyW");
+  makeBtn("S", "15vw", "0vw",  "KeyS");
 
   // Kick
   makeBtn("X", "70vw", "12vw", "KeyX");
