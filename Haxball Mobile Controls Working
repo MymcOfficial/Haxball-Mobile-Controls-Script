@@ -37,8 +37,8 @@
     }
     #kick {
       position: fixed;
-      right: 6vw;
-      bottom: 10vw;
+      right: 3vw;
+      bottom: 8vw;
       width: 90px;
       height: 90px;
       background: rgba(200,200,200,0.3);
