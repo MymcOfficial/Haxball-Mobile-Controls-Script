@@ -1,0 +1,74 @@
+// ==UserScript==
+// @name         Haxball Mobile Controls (WASD)
+// @version      1.2
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  function keyDown(k) {
+    document.dispatchEvent(new KeyboardEvent("keydown", {
+      key: k,
+      code: "Key" + k.toUpperCase(),
+      bubbles: true
+    }));
+  }
+
+  function keyUp(k) {
+    document.dispatchEvent(new KeyboardEvent("keyup", {
+      key: k,
+      code: "Key" + k.toUpperCase(),
+      bubbles: true
+    }));
+  }
+
+  function createBtn(text, left, bottom, key) {
+    const b = document.createElement("div");
+    b.textContent = text;
+
+    Object.assign(b.style, {
+      position: "fixed",
+      left,
+      bottom,
+      width: "75px",
+      height: "75px",
+      background: "rgba(0,0,0,0.8)",
+      color: "#fff",
+      borderRadius: "14px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "24px",
+      zIndex: "999999",
+      touchAction: "none",
+      userSelect: "none"
+    });
+
+    b.onpointerdown = e => {
+      e.preventDefault();
+      keyDown(key);
+    };
+
+    b.onpointerup = e => {
+      e.preventDefault();
+      keyUp(key);
+    };
+
+    b.onpointercancel = () => keyUp(key);
+    b.onpointerleave = () => keyUp(key);
+
+    document.body.appendChild(b);
+  }
+
+  // Movement (WASD)
+  createBtn("A", "20px", "90px", "a");
+  createBtn("D", "180px", "90px", "d");
+  createBtn("W", "100px", "160px", "w");
+  createBtn("S", "100px", "20px", "s");
+
+  // Kick (X)
+  createBtn("X", "calc(100% - 100px)", "90px", "x");
+
+})();
