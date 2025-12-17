@@ -1,0 +1,83 @@
+// ==UserScript==
+// @name         Haxball Mobile Controls
+// @version      1.1
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  function pressKey(key) {
+    document.dispatchEvent(new KeyboardEvent("keydown", {
+      key: key,
+      code: key,
+      bubbles: true
+    }));
+  }
+
+  function releaseKey(key) {
+    document.dispatchEvent(new KeyboardEvent("keyup", {
+      key: key,
+      code: key,
+      bubbles: true
+    }));
+  }
+
+  function createButton(label, left, bottom, key) {
+    const btn = document.createElement("div");
+    btn.textContent = label;
+
+    Object.assign(btn.style, {
+      position: "fixed",
+      left: left,
+      bottom: bottom,
+      width: "75px",
+      height: "75px",
+      background: "rgba(0,0,0,0.75)",
+      color: "#fff",
+      borderRadius: "15px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "24px",
+      zIndex: "2147483647",
+      pointerEvents: "auto",
+      touchAction: "none",
+      userSelect: "none"
+    });
+
+    btn.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      pressKey(key);
+    });
+
+    btn.addEventListener("pointerup", e => {
+      e.preventDefault();
+      releaseKey(key);
+    });
+
+    btn.addEventListener("pointercancel", () => releaseKey(key));
+    btn.addEventListener("pointerleave", () => releaseKey(key));
+
+    document.body.appendChild(btn);
+  }
+
+  // REMOVE canvas touch priority
+  const style = document.createElement("style");
+  style.textContent = `
+    canvas {
+      touch-action: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // D-Pad
+  createButton("⬅️", "20px", "100px", "ArrowLeft");
+  createButton("➡️", "190px", "100px", "ArrowRight");
+  createButton("⬆️", "105px", "180px", "ArrowUp");
+  createButton("⬇️", "105px", "20px", "ArrowDown");
+
+  // Kick
+  createButton("⚽", "calc(100% - 100px)", "80px", " ");
+})();
