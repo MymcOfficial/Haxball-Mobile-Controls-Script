@@ -1,0 +1,91 @@
+// ==UserScript==
+// @name         Haxball Controller Only
+// @version      1.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  /* ================== KEY EMULATION ================== */
+  function send(type, code) {
+    gameFrame.document.dispatchEvent(
+      new KeyboardEvent(type, { code, bubbles: true })
+    );
+  }
+
+  function emulate(dir) {
+    const k = { w:false, a:false, s:false, d:false };
+    if (dir) k[dir] = true;
+
+    send(k.w ? "keydown" : "keyup", "KeyW");
+    send(k.a ? "keydown" : "keyup", "KeyA");
+    send(k.s ? "keydown" : "keyup", "KeyS");
+    send(k.d ? "keydown" : "keyup", "KeyD");
+  }
+
+  /* ================== CONTROLLER ================== */
+  let gpIndex = null;
+  let lastDir = "";
+  let kickHeld = false;
+
+  window.addEventListener("gamepadconnected", e => {
+    console.log("🎮 Controller connected:", e.gamepad.id);
+    gpIndex = e.gamepad.index;
+    loop();
+  });
+
+  window.addEventListener("gamepaddisconnected", () => {
+    console.log("🎮 Controller disconnected");
+    gpIndex = null;
+    emulate("");
+    send("keyup", "Space");
+  });
+
+  function loop() {
+    if (gpIndex === null) return;
+
+    const gp = navigator.getGamepads()[gpIndex];
+    if (!gp) return;
+
+    /* ---- Left stick movement ---- */
+    const x = gp.axes[0];
+    const y = gp.axes[1];
+    const deadzone = 0.35;
+
+    let dir = "";
+
+    if (Math.abs(x) > Math.abs(y)) {
+      if (x > deadzone) dir = "d";
+      else if (x < -deadzone) dir = "a";
+    } else {
+      if (y > deadzone) dir = "s";
+      else if (y < -deadzone) dir = "w";
+    }
+
+    if (dir !== lastDir) {
+      emulate(dir);
+      lastDir = dir;
+    }
+
+    /* ---- Kick (A / Cross) ---- */
+    const pressed = gp.buttons[0]?.pressed;
+
+    if (pressed && !kickHeld) {
+      send("keydown", "Space"); // change key here if you want
+      kickHeld = true;
+    }
+
+    if (!pressed && kickHeld) {
+      send("keyup", "Space");
+      kickHeld = false;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+})();
