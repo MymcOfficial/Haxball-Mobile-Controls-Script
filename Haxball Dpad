@@ -1,0 +1,170 @@
+// ==UserScript==
+// @name         Haxball 4-Way Mobile Joystick
+// @version      1.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  /* ---------- styles ---------- */
+  const style = document.createElement("style");
+  style.textContent = `
+    #joystick {
+      position: fixed;
+      left: 4vw;
+      bottom: 6vw;
+
+      width: 140px;
+      height: 140px;
+
+      background: rgba(200,200,200,0.2);
+      border-radius: 50%;
+      z-index: 9999;
+      touch-action: none;
+    }
+
+    #thumb {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    #kick {
+      position: fixed;
+      right: 6vw;
+      bottom: 8vw;
+
+      width: 110px;
+      height: 110px;
+
+      background: rgba(200,200,200,0.3);
+      border-radius: 50%;
+      z-index: 9999;
+      touch-action: none;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 32px;
+      font-weight: bold;
+    }
+  `;
+  document.head.appendChild(style);
+
+  /* ---------- elements ---------- */
+  const joystick = document.createElement("div");
+  joystick.id = "joystick";
+  joystick.innerHTML = `<div id="thumb"></div>`;
+
+  const kickBtn = document.createElement("div");
+  kickBtn.id = "kick";
+  kickBtn.textContent = "X";
+
+  document.body.appendChild(joystick);
+  document.body.appendChild(kickBtn);
+
+  const thumb = joystick.querySelector("#thumb");
+
+  /* ---------- key handling ---------- */
+  function send(type, code) {
+    gameFrame.document.dispatchEvent(
+      new KeyboardEvent(type, { code, bubbles: true })
+    );
+  }
+
+  function releaseAll() {
+    send("keyup", "KeyW");
+    send("keyup", "KeyA");
+    send("keyup", "KeyS");
+    send("keyup", "KeyD");
+  }
+
+  function press(dir) {
+    releaseAll();
+    if (dir === "w") send("keydown", "KeyW");
+    if (dir === "a") send("keydown", "KeyA");
+    if (dir === "s") send("keydown", "KeyS");
+    if (dir === "d") send("keydown", "KeyD");
+  }
+
+  /* ---------- joystick logic (4-WAY ONLY) ---------- */
+  let active = false;
+
+  joystick.addEventListener("touchstart", e => {
+    active = true;
+    handle(e.touches[0]);
+  });
+
+  joystick.addEventListener("touchmove", e => {
+    if (active) handle(e.touches[0]);
+  });
+
+  joystick.addEventListener("touchend", reset);
+  joystick.addEventListener("touchcancel", reset);
+
+  function handle(touch) {
+    const r = joystick.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+
+    const dx = touch.clientX - cx;
+    const dy = touch.clientY - cy;
+
+    const threshold = r.width * 0.18;
+    const half = r.width / 2 - thumb.offsetWidth / 2;
+
+    let dir = "";
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal
+      if (dx > threshold) {
+        dir = "d";
+        thumb.style.left = `${half + r.width / 2}px`;
+        thumb.style.top = "50%";
+      } else if (dx < -threshold) {
+        dir = "a";
+        thumb.style.left = `${r.width / 2 - half}px`;
+        thumb.style.top = "50%";
+      }
+    } else {
+      // Vertical
+      if (dy > threshold) {
+        dir = "s";
+        thumb.style.top = `${half + r.height / 2}px`;
+        thumb.style.left = "50%";
+      } else if (dy < -threshold) {
+        dir = "w";
+        thumb.style.top = `${r.height / 2 - half}px`;
+        thumb.style.left = "50%";
+      }
+    }
+
+    thumb.style.transform = "translate(-50%, -50%)";
+    press(dir);
+  }
+
+  function reset() {
+    active = false;
+    thumb.style.left = "50%";
+    thumb.style.top = "50%";
+    thumb.style.transform = "translate(-50%, -50%)";
+    releaseAll();
+  }
+
+  /* ---------- kick ---------- */
+  kickBtn.addEventListener("touchstart", () => send("keydown", "Space"));
+  kickBtn.addEventListener("touchend", () => send("keyup", "Space"));
+  kickBtn.addEventListener("touchcancel", () => send("keyup", "Space"));
+
+})();
