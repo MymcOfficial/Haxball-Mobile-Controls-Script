@@ -145,9 +145,9 @@
   }
 
   /* ================== KICK (SPACE) ================== */
-  kickBtn.addEventListener("touchstart", () => send("keydown", "Space"));
-  kickBtn.addEventListener("touchend", () => send("keyup", "Space"));
-  kickBtn.addEventListener("touchcancel", () => send("keyup", "Space"));
+  kickBtn.addEventListener("touchstart", () => send("keydown", "ShiftLeft"));
+  kickBtn.addEventListener("touchend", () => send("keyup", "ShiftLeft"));
+  kickBtn.addEventListener("touchcancel", () => send("keyup", "ShiftLeft"));
 
   /* ================== SETTINGS MENU ================== */
   const observer = new MutationObserver(() => {
