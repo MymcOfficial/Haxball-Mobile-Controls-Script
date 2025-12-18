@@ -1,0 +1,197 @@
+// ==UserScript==
+// @name         Haxball 4-Way Mobile Controls (Customizable)
+// @version      1.1
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  /* ================== CONFIG ================== */
+  const DEFAULTS = {
+    joySize: 120,
+    joyLeft: 5,     // vw
+    joyBottom: 10,  // vw
+    kickSize: 90,
+    kickRight: 6,   // vw
+    kickBottom: 10  // vw
+  };
+
+  const cfg = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem("hbControls") || "{}"));
+
+  function save() {
+    localStorage.setItem("hbControls", JSON.stringify(cfg));
+    applyStyles();
+  }
+
+  /* ================== STYLES ================== */
+  const style = document.createElement("style");
+  document.head.appendChild(style);
+
+  function applyStyles() {
+    style.innerHTML = `
+      #joystick {
+        position: fixed;
+        left: ${cfg.joyLeft}vw;
+        bottom: ${cfg.joyBottom}vw;
+        width: ${cfg.joySize}px;
+        height: ${cfg.joySize}px;
+        background: rgba(200,200,200,0.25);
+        border-radius: 50%;
+        z-index: 9999;
+        touch-action: none;
+      }
+      #thumb {
+        position: absolute;
+        width: ${cfg.joySize * 0.35}px;
+        height: ${cfg.joySize * 0.35}px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 50%;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #kick {
+        position: fixed;
+        right: ${cfg.kickRight}vw;
+        bottom: ${cfg.kickBottom}vw;
+        width: ${cfg.kickSize}px;
+        height: ${cfg.kickSize}px;
+        background: rgba(200,200,200,0.35);
+        border-radius: 50%;
+        z-index: 9999;
+        font-size: 22px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+      }
+    `;
+  }
+
+  applyStyles();
+
+  /* ================== ELEMENTS ================== */
+  const joystick = document.createElement("div");
+  joystick.id = "joystick";
+  joystick.innerHTML = `<div id="thumb"></div>`;
+
+  const kickBtn = document.createElement("div");
+  kickBtn.id = "kick";
+  kickBtn.textContent = "⎵";
+
+  document.body.appendChild(joystick);
+  document.body.appendChild(kickBtn);
+
+  const thumb = joystick.querySelector("#thumb");
+
+  /* ================== KEYS ================== */
+  function send(type, code) {
+    gameFrame.document.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
+  }
+
+  function emulate(dir) {
+    const map = { w:false, a:false, s:false, d:false };
+    if (dir) map[dir] = true;
+
+    send(map.w ? "keydown" : "keyup", "KeyW");
+    send(map.a ? "keydown" : "keyup", "KeyA");
+    send(map.s ? "keydown" : "keyup", "KeyS");
+    send(map.d ? "keydown" : "keyup", "KeyD");
+  }
+
+  /* ================== 4-WAY JOYSTICK ================== */
+  let touching = false;
+
+  joystick.addEventListener("touchstart", e => {
+    touching = true;
+    move(e.touches[0]);
+  });
+
+  joystick.addEventListener("touchmove", e => touching && move(e.touches[0]));
+  joystick.addEventListener("touchend", reset);
+  joystick.addEventListener("touchcancel", reset);
+
+  function move(t) {
+    const r = joystick.getBoundingClientRect();
+    const dx = t.clientX - (r.left + r.width / 2);
+    const dy = t.clientY - (r.top + r.height / 2);
+
+    let dir = "";
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dir = dx > 0 ? "d" : "a";
+      thumb.style.left = dx > 0 ? "75%" : "25%";
+      thumb.style.top = "50%";
+    } else {
+      dir = dy > 0 ? "s" : "w";
+      thumb.style.top = dy > 0 ? "75%" : "25%";
+      thumb.style.left = "50%";
+    }
+
+    thumb.style.transform = "translate(-50%, -50%)";
+    emulate(dir);
+  }
+
+  function reset() {
+    touching = false;
+    thumb.style.left = "50%";
+    thumb.style.top = "50%";
+    emulate("");
+  }
+
+  /* ================== KICK (SPACE) ================== */
+  kickBtn.addEventListener("touchstart", () => send("keydown", "Space"));
+  kickBtn.addEventListener("touchend", () => send("keyup", "Space"));
+  kickBtn.addEventListener("touchcancel", () => send("keyup", "Space"));
+
+  /* ================== SETTINGS MENU ================== */
+  const observer = new MutationObserver(() => {
+    const settings = gameFrame.document.querySelector(".settings-view .section.selected");
+    if (!settings || settings.querySelector("#mobile-controls")) return;
+
+    const box = document.createElement("div");
+    box.id = "mobile-controls";
+    box.innerHTML = `
+      <h2>Mobile Controls</h2>
+
+      <label>Joystick Size</label>
+      <input type="range" min="80" max="180" value="${cfg.joySize}">
+
+      <label>Joystick Left</label>
+      <input type="range" min="0" max="20" value="${cfg.joyLeft}">
+
+      <label>Joystick Bottom</label>
+      <input type="range" min="0" max="20" value="${cfg.joyBottom}">
+
+      <label>Kick Size</label>
+      <input type="range" min="60" max="160" value="${cfg.kickSize}">
+
+      <label>Kick Right</label>
+      <input type="range" min="0" max="20" value="${cfg.kickRight}">
+
+      <label>Kick Bottom</label>
+      <input type="range" min="0" max="20" value="${cfg.kickBottom}">
+    `;
+
+    settings.appendChild(box);
+
+    const inputs = box.querySelectorAll("input");
+    [
+      "joySize","joyLeft","joyBottom",
+      "kickSize","kickRight","kickBottom"
+    ].forEach((k,i)=>{
+      inputs[i].addEventListener("input", e=>{
+        cfg[k] = Number(e.target.value);
+        save();
+      });
+    });
+  });
+
+  observer.observe(gameFrame.document.body, { childList:true, subtree:true });
+
+})();
