@@ -1,0 +1,89 @@
+// ==UserScript==
+// @name         Haxball D-Pad Controller
+// @version      1.0
+// @match        https://www.haxball.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const gameFrame = document.querySelector('.gameframe')?.contentWindow;
+  if (!gameFrame) return;
+
+  /* ========== KEY EMULATION ========== */
+  function send(type, code) {
+    gameFrame.document.dispatchEvent(
+      new KeyboardEvent(type, { code, bubbles: true })
+    );
+  }
+
+  let held = { w:false, a:false, s:false, d:false };
+
+  function update(keys) {
+    for (const k of ["w","a","s","d"]) {
+      if (keys[k] && !held[k]) {
+        send("keydown", "Key" + k.toUpperCase());
+        held[k] = true;
+      }
+      if (!keys[k] && held[k]) {
+        send("keyup", "Key" + k.toUpperCase());
+        held[k] = false;
+      }
+    }
+  }
+
+  function releaseAll() {
+    update({ w:false, a:false, s:false, d:false });
+  }
+
+  /* ========== CONTROLLER ========== */
+  let gpIndex = null;
+  let kickHeld = false;
+
+  window.addEventListener("gamepadconnected", e => {
+    console.log("🎮 Controller connected:", e.gamepad.id);
+    gpIndex = e.gamepad.index;
+    loop();
+  });
+
+  window.addEventListener("gamepaddisconnected", () => {
+    console.log("🎮 Controller disconnected");
+    gpIndex = null;
+    releaseAll();
+    send("keyup", "Space");
+  });
+
+  function loop() {
+    if (gpIndex === null) return;
+
+    const gp = navigator.getGamepads()[gpIndex];
+    if (!gp) return;
+
+    /* ---- D-PAD MOVEMENT ---- */
+    const keys = {
+      w: gp.buttons[12]?.pressed, // up
+      s: gp.buttons[13]?.pressed, // down
+      a: gp.buttons[14]?.pressed, // left
+      d: gp.buttons[15]?.pressed  // right
+    };
+
+    update(keys);
+
+    /* ---- KICK (A / Cross) ---- */
+    const kick = gp.buttons[0]?.pressed;
+
+    if (kick && !kickHeld) {
+      send("keydown", "Space");
+      kickHeld = true;
+    }
+
+    if (!kick && kickHeld) {
+      send("keyup", "Space");
+      kickHeld = false;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+})();
